@@ -10,10 +10,10 @@
 #define NBACKGROUND (4*4*4*4*4)
 
 extern char chrNames[23][3], sequenceTable[NSEQUENCES][7], componentNames[NCOMPONENTS][9], componentSequences[NCOMPONENTS][7], backgroundSequenceTable[NBACKGROUND][6];
-extern float sequenceCountTable[NSEQUENCES][2], backgroundCountTable[NBACKGROUND], xy[2][NCOMPONENTS];
+extern float sequenceCountTable[NSEQUENCES][2], backgroundCountTable[NBACKGROUND], xy[2][NCOMPONENTS],meanBackgroundCount;
 extern baseHasher hasher;
 
 double correl(float* x, float* y, int count);
-int getPredictedCounts(const char* compBetaFileName, const char* observedSeqsName, const char* outputFileName);
+int getPredictedCounts(FILE *flog,const char* compBetaFileName, const char* observedSeqsName, const char* outputFileName);
 
 #endif

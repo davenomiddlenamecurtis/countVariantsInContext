@@ -7,7 +7,8 @@ class baseHasher {
 public:
 	baseHasher();
 	unsigned int hashBases(const char* in, int len);
-	int getComplement(char *out,const char* in, int len);
+	int getComplement(char* out, const char* in, int len);
+	int getVariantComplement(char* out, const char* in);
 	int convertToSig(char* out, const char* in);
 };
 

@@ -11,8 +11,8 @@ using namespace dlib;
 typedef matrix<double, 0, 1> column_vector;
 double derivative_eps = 1e-7; // used to get gradient of lnL by beta
 double second_derivative_eps = 1e-3; // I may be wrong but I think rounding errors otherwise
-double tLimit=8;
-double stop_limit_increment = 1e-7; // 1e-7; 
+double tLimit=10; // was 8
+double stop_limit_increment = 1e-7;
 
 class glfModelMaximiser
 {
@@ -124,7 +124,6 @@ void glfModel::normalise()
 
 void glfModel::deNormalise()
 {
-
 	int c,r;
 	double incBeta0,incSEBeta0;
 	if(!isNormalised)
@@ -468,7 +467,7 @@ int glfModel::init(int r, int c)
 	nRow = r;
 	nCol = c;
 	name = (char **)calloc(c + 1, sizeof(char*));
-	beta = (double *)calloc(c + 1, sizeof(double));
+	beta = (double *)calloc(c + 1, sizeof(double)); //  this sets starting betas to 0
 	SE = (double *)calloc(c + 1, sizeof(double));
 	mean = (double *)calloc(c + 1,sizeof(double));
 	SD = (double *)calloc(c + 1,sizeof(double));

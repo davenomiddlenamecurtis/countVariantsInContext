@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 		fprintf(ft, "%s\t%d\t%d\t%d\n", baseTable[l][0], vtotals[l][0], vtotals[l][2], vtotals[l][2]);
 	fclose(ft);
 	for (i = 0; i < 4096; ++i)
-		totals[i][0] = 0;
+		totals[i][0] = totals[i][1] = 0;
 	for (c = 0; c < 23; ++c) {
 		chr = chrNames[c];
 		sprintf(compPairBackgroundCountsFileRoot, "compPairBackgroundCounts.%s", chr);
@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
 	printCorrs(fo);
 	ft = fopen("compPairBackgroundCounts.total.txt", "w");
 	for (l = 0; l < i; ++l)
-		fprintf(ft, "%s\t%s\t%d\t%d\n", backgroundBaseTable[l][0], backgroundBaseTable[l][0], totals[l][0], totals[l][1]);
+		fprintf(ft, "%s\t%s\t%d\t%d\n", backgroundBaseTable[l][0], backgroundBaseTable[l][1], totals[l][0], totals[l][1]);
 	fclose(ft);
 	for (f = 0; f < 3; ++f) {
 		for (i = 0; i < 4096; ++i)

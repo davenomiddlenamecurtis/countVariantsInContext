@@ -34,7 +34,7 @@ maybe first use F3s, then U3s, then D3s, then all 3s
 
 #endif
 char chrNames[23][3], sequenceTable[NSEQUENCES][7], componentNames[NCOMPONENTS][9], componentSequences[NCOMPONENTS][7], backgroundSequenceTable[NBACKGROUND][6];
-float sequenceCountTable[NSEQUENCES][2],backgroundCountTable[NBACKGROUND],xy[2][NCOMPONENTS];
+float sequenceCountTable[NSEQUENCES][2],backgroundCountTable[NBACKGROUND],xy[2][NCOMPONENTS],meanBackgroundCount;
 baseHasher hasher;
 
 
@@ -64,20 +64,25 @@ double correl(float* x, float* y, int count)
 	return r;
 }
 
-int getPredictedCounts(const char* compBetaFileName, const char *observedSeqsName, const char* outputFileName) {
+int getPredictedCounts(FILE *flog,const char* compBetaFileName, const char *observedSeqsName, const char* outputFileName) {
 	FILE* fi,*fo;
 	char line[1000],compName[100];
 	int i,c,nComps;
 	unsigned int hash;
-	float c1,*betas,beta,SE,z,predCount;
+	float c1,*betas,beta,SE,z,predCount,intBeta;
 	betas = (float*)calloc(NCOMPONENTS,sizeof(float));
 	fi = fopen(compBetaFileName, "r");
 	i = 0;
+	intBeta = 0;
 	while (fgets(line, 999, fi)) {
-		if (sscanf(line, "%s %f %f %f", compName, &beta, &SE, &z) == 4 && strchr("MUFD", compName[0])) {
-			strcpy(componentSequences[i], compName + 2);
-			betas[i] = beta;
-			++i;
+		if (sscanf(line, "%s %f %f %f", compName, &beta, &SE, &z) == 4) {
+			if (strchr("MUFD", compName[0])) {
+				strcpy(componentSequences[i], compName + 2);
+				betas[i] = beta;
+				++i;
+			}
+			else if (!strcmp(compName, "Intercept"))
+				intBeta = beta;
 		}
 	}
 	fclose(fi);
@@ -93,8 +98,10 @@ int getPredictedCounts(const char* compBetaFileName, const char *observedSeqsNam
 			if (matches(sequenceTable[i], componentSequences[c], 6))
 				beta += betas[c];
 		}
+		beta += intBeta;
 		hash = hasher.hashBases(sequenceTable[i], 5); // just for background
-		predCount=exp(beta)/(exp(beta)+1)* backgroundCountTable[hash];
+		predCount = exp(beta) / (exp(beta) + 1) * meanBackgroundCount;
+//		predCount = exp(beta) / (exp(beta) + 1) * backgroundCountTable[hash];
 		fprintf(fo, "%s\t%d\t%.2f\n", sequenceTable[i], (int)c1, predCount);
 		xy[0][i] = predCount;
 		xy[1][i] = c1;
@@ -102,7 +109,8 @@ int getPredictedCounts(const char* compBetaFileName, const char *observedSeqsNam
 	}
 	fclose(fi);
 	fclose(fo);
-	printf("Correlation coefficient for %s: R = %f\n",outputFileName,correl(xy[0],xy[1],i));
+	printf("Correlation coefficient for %s: R = %f\n", outputFileName, correl(xy[0], xy[1], i));
+	fprintf(flog,"Correlation coefficient for %s: R = %f\n", outputFileName, correl(xy[0], xy[1], i));
 	free(betas);
 	return 1;
 }
