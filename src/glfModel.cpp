@@ -14,6 +14,8 @@ double second_derivative_eps = 1e-3; // I may be wrong but I think rounding erro
 double tLimit=10; // was 8
 double stop_limit_increment = 1e-7;
 
+FILE* fGlfLog;
+
 class glfModelMaximiser
 {
 public:
@@ -48,7 +50,7 @@ void glfModel::getMeans()
 		mean[c] = 0;
 	for(c = 0; c < nCol; ++c)
 		for(r = 0; r < nRow; ++r)
-			mean[c] += X[r][c];
+			mean[c] += X[r][c]*F[r];
 	for (tot=0.0, r = 0; r < nRow; ++r)
 		tot += F[r];
 	for(c = 0; c < nCol; ++c)
@@ -89,8 +91,8 @@ void glfModel::normalise()
 	for(c = 0; c < nCol; ++c)
 		for(r = 0; r < nRow; ++r)
 		{
-			mean[c] += X[r][c];
-			X2[c]+=X[r][c]*X[r][c];
+			mean[c] += X[r][c]*F[r];
+			X2[c]+=X[r][c]*X[r][c] * F[r];
 		}
 	for (tot = 0.0, r = 0; r < nRow; ++r)
 		tot += F[r];
@@ -199,8 +201,6 @@ double glfModel::maximiseLnL()
 {
 	int c,cc;
 	double d;
-	double (*func)();
-	func=getRegularisedMinusModelLnL;
 	if (betasToFit != 0)
 		free(betasToFit);
 	betasToFit = (double *)calloc(nCol + 1,sizeof(double));
@@ -367,6 +367,12 @@ double glfModel::getLnL()
 		// we are using the MLE of the variance given mean is t[r], which is sigmaX2/tot, hence the last term is 1
 		// https://en.wikipedia.org/wiki/Maximum_likelihood_estimation
 		// lnL = -n/2*log(2pi*s2)-1/(2*s2)*sigma((xi-m)^2)
+	}
+	if (fGlfLog) {
+		fprintf(fGlfLog, "LL + %f\n\n", lnL);
+		for (c = 0; c < modelToFit->nCol + 1; ++c)
+			fprintf(fGlfLog, "%f\n", modelToFit->beta[c]);
+		fprintf(fGlfLog, "\n");
 	}
 	return lnL;
 }

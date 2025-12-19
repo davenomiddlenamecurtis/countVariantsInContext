@@ -12,6 +12,9 @@ void printModel(FILE* fo, const char* LLstr, double LL, glfModel* m);
 float evaluateModel(FILE* fo, glfModel* m, const char* name, int* useThese = 0,double *startingBetas=0,int useLinearRegression=0);
 int getBetas(double* beta, glfModel* m);
 void setStartingBetasFromCounts(glfModel *m);
+int writeRFiles(glfModel* m,char* root);
+
+extern FILE* fGlfLog;
 
 #endif
 

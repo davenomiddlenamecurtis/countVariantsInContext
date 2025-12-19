@@ -37,8 +37,8 @@ int main(int argc, char* argv[])
 	int i, c,f,l,b,bs,b1,b2,b3,b4,b5,comp,*useThis, *useThese,upToThree,numTrios;
 	unsigned int hash;
 	char target,source,first, second,third,fourth,fifth;
-	float c1,realBeta,countTotal,LL,*fitted5LLs[4];
-	double* keptBetas[4], *fitted5Betas[4],fitted5BetaThreshold=0.1;
+	float c1,realBeta,countTotal,LL;
+	double* keptBetas[4], *fitted4and5Betas[4],fitted4and5BetaThreshold=0.01;
 	FILE* fi,*fo,*fplus,*fminus,*flog,*fpairs,*fc;
 	char *chr,line[1000],fn[100],seq[7],component[6],intercept[20],minusStrandSeq[7], sig[8],minusStrandSig[8];
 	baseHasher hasher;
@@ -78,6 +78,8 @@ int main(int argc, char* argv[])
 	// for each base outcome, model background which leads to it
 	sprintf(fn, "modelMutation.oneMut.txt");
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.oneMut.fromCounts.txt");
+	fc = fopen(fn, "w");
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
 		l = 0;
@@ -112,17 +114,21 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
+		printModel(fc, "oneMut from counts", 0, &model);
 		sprintf(line, "modelMutation.oneMut.%c", target);
-		printModel(fo, line, LL, &model);
+		evaluateModel(fo, &model, line, useThese);
+		// writeRFiles(&model, line);
 	}
 	fclose(fo);
+	fclose(fc);
 
 	getPredictedCounts(flog, "modelMutation.oneMut.txt", "correctedCounts.total.2.txt", "modelMutation.oneMut.predictions.txt");
 	
 	// for each base outcome, model background which leads to it
 	sprintf(fn, "modelMutation.U2.txt");
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.U2.fromCounts.txt");
+	fc = fopen(fn, "w");
 	fpairs = fopen("U2.complements.txt", "w"); // helpful for Excel to find complementary sequence
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
@@ -162,11 +168,12 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
+		printModel(fc, "U2 from counts", 0, &model);
 		sprintf(line, "modelMutation.U2.%c", target);
-		printModel(fo, line, LL, &model);
+		evaluateModel(fo, &model, line, useThese);
 	}
 	fclose(fo);
+	fclose(fc);
 	fclose(fpairs);
 
 	getPredictedCounts(flog, "modelMutation.U2.txt", "correctedCounts.total.2.txt", "modelMutation.U2.predictions.txt");
@@ -174,6 +181,8 @@ int main(int argc, char* argv[])
 	// for each base outcome, model background which leads to it
 	sprintf(fn, "modelMutation.D2.txt");
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.D2.fromCounts.txt");
+	fc = fopen(fn, "w");
 	fpairs = fopen("D2.complements.txt", "w");
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
@@ -213,11 +222,13 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
+		printModel(fc, "D2 from counts", 0, &model);
 		sprintf(line, "modelMutation.D2.%c", target);
-		printModel(fo, line, LL, &model);
+		evaluateModel(fo, &model, line, useThese);
+		// writeRFiles(&model, line);
 	}
 	fclose(fo);
+	fclose(fc);
 
 	getPredictedCounts(flog, "modelMutation.D2.txt", "correctedCounts.total.2.txt", "modelMutation.D2.predictions.txt");
 
@@ -227,6 +238,8 @@ int main(int argc, char* argv[])
 	fclose(fplus);
 	fclose(fminus);
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.threeFlankingBases.fromCounts.txt");
+	fc = fopen(fn, "w");
 	fpairs = fopen("F3.complements.txt", "w"); // helpful for Excel to find complementary sequence
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
@@ -271,13 +284,13 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
-		printModel(fo, line,LL, & model);
+		printModel(fc, "F3 from counts",0, & model);
+		evaluateModel(fo, &model, line, useThese);
 		fplus = fopen("modelMutation.threeFlankingBases.plus.txt", "a");
 		fminus = fopen("modelMutation.threeFlankingBases.minus.txt", "a");
 		for (comp = 0; comp < l; ++comp) {
 			strcpy(seq, model.name[comp]+2);
-			realBeta= model.beta[comp];
+			realBeta= model.SD[comp] ? model.beta[comp] / model.SD[comp] : 0.0;
 			if (seq[2]=='C'|| seq[2] == 'T') {
 				hasher.convertToSig(sig, seq);
 				fprintf(fplus, "%s\t%f\n", sig,realBeta);
@@ -292,12 +305,15 @@ int main(int argc, char* argv[])
 		fclose(fminus);
 	}
 	fclose(fo);
+	fclose(fc);
 	fclose(fpairs);
 
 	getPredictedCounts(flog, "modelMutation.threeFlankingBases.txt", "correctedCounts.total.2.txt", "modelMutation.threeFlankingBases.predictions.txt");
 
 	sprintf(fn, "modelMutation.threeUpstreamBases.txt");
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.threeUpstreamBases.fromCounts.txt");
+	fc = fopen(fn, "w");
 	fpairs = fopen("U3.complements.txt", "w");
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
@@ -340,17 +356,20 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
+		printModel(fc, "threeUpstream from counts", 0, &model);
 		sprintf(line, "modelMutation.threeUpstreamBases.%c", target);
-		printModel(fo, line, LL, &model);
+		evaluateModel(fo, &model, line, useThese);
 	}
 	fclose(fo);
+	fclose(fc);
 	fclose(fpairs);
 
 	getPredictedCounts(flog, "modelMutation.threeUpstreamBases.txt", "correctedCounts.total.2.txt", "modelMutation.threeUpstreamBases.predictions.txt");
 
 	sprintf(fn, "modelMutation.threeDownstreamBases.txt");
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.threeDownstreamBases.fromCounts.txt");
+	fc = fopen(fn, "w");
 	fpairs = fopen("D3.complements.txt", "w");
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
@@ -393,17 +412,20 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
+		printModel(fc, "threeDownstream from counts", 0, &model);
 		sprintf(line, "modelMutation.threeDownstreamBases.%c", target);
-		printModel(fo, line, LL, &model);
+		evaluateModel(fo, &model, line, useThese);
 	}
 	fclose(fo);
+	fclose(fc);
 	fclose(fpairs);
 
 	getPredictedCounts(flog, "modelMutation.threeDownstreamBases.txt", "correctedCounts.total.2.txt", "modelMutation.threeDownstreamBases.predictions.txt");
 
 	sprintf(fn, "modelMutation.fourUpstreamBases.txt");
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.fourUpstreamBases.fromCounts.txt");
+	fc = fopen(fn, "w");
 	fpairs = fopen("U4.complements.txt", "w");
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
@@ -449,17 +471,20 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
+		printModel(fc, "fourUpstream from counts", 0, &model);
 		sprintf(line, "modelMutation.fourUpstreamBases.%c", target);
-		printModel(fo, line, LL, &model);
+		evaluateModel(fo, &model, line, useThese);
 	}
 	fclose(fo);
+	fclose(fc);
 	fclose(fpairs);
 
 	getPredictedCounts(flog, "modelMutation.fourUpstreamBases.txt", "correctedCounts.total.2.txt", "modelMutation.fourUpstreamBases.predictions.txt");
 
 	sprintf(fn, "modelMutation.fourDownstreamBases.txt");
 	fo = fopen(fn, "w");
+	sprintf(fn, "modelMutation.fourDownstreamBases.fromCounts.txt");
+	fc = fopen(fn, "w");
 	fpairs = fopen("D4.complements.txt", "w");
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
@@ -505,14 +530,16 @@ int main(int argc, char* argv[])
 		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
-		LL = model.getLnL();
+		printModel(fc, "fourDownstream from counts", 0, &model);
 		sprintf(line, "modelMutation.fourDownstreamBases.%c", target);
-		printModel(fo, line, LL, &model);
+		evaluateModel(fo, &model, line, useThese);
 	}
 	fclose(fo);
+	fclose(fc);
 	fclose(fpairs);
 
 	getPredictedCounts(flog, "modelMutation.fourDownstreamBases.txt", "correctedCounts.total.2.txt", "modelMutation.fourDownstreamBases.predictions.txt");
+
 
 	sprintf(fn, "modelMutation.five.txt");
 	fo = fopen(fn, "w");
@@ -520,13 +547,6 @@ int main(int argc, char* argv[])
 	sprintf(fn, "modelMutation.fullModel.txt");
 	fo = fopen(fn, "w");
 	fclose(fo);
-	fo=fopen("fitted5Betas.txt", "w");
-	fclose(fo);
-	fpairs = fopen("F5.complements.txt", "w");
-	for (b = 0; b < 4; ++b) {
-		fitted5Betas[b] = (double*)calloc(NCOMPONENTS, sizeof(double));
-		fitted5LLs[b] = (float*)calloc(NCOMPONENTS, sizeof(float));
-	}
 	for (b = 0; b < 4; ++b) {
 		target = baseNames[b];
 		l = 0;
@@ -542,33 +562,61 @@ int main(int argc, char* argv[])
 					sprintf(componentNames[l], "F3_%c%c%c_%c", first, source, second, target);
 					useThese[l] = 1;
 					++l;
-				} 
+				} // essential that these are generated in same order as previously so that beta match
+			}
+		}
+		for (bs = 0; bs < 4; ++bs) {
+			source = baseNames[bs];
+			if (source == target)
+				continue;
+			for (b1 = 0; b1 < 4; ++b1) {
+				first = baseNames[b1];
+				for (b2 = 0; b2 < 4; ++b2) {
+					second = baseNames[b2];
+					sprintf(componentSequences[l], "%c%c%c__%c", second, first, source, target);
+					sprintf(componentNames[l], "U3%c%c%c__%c", second, first, source, target);
+					useThese[l] = 1;
+					++l;
+				}
+			}
+		}
+		for (bs = 0; bs < 4; ++bs) {
+			source = baseNames[bs];
+			if (source == target)
+				continue;
+			for (b1 = 0; b1 < 4; ++b1) {
+				first = baseNames[b1];
+				for (b2 = 0; b2 < 4; ++b2) {
+					second = baseNames[b2];
+					sprintf(componentSequences[l], "__%c%c%c%c", source, first, second, target);
+					sprintf(componentNames[l], "D3__%c%c%c%c", source, first, second, target);
+					useThese[l] = 1;
+					++l;
+				}
 			}
 		}
 		upToThree = l;
-
-			for (bs = 0; bs < 4; ++bs) {
-				source = baseNames[bs];
-				if (source == target)
-					continue;
-				for (b1 = 0; b1 < 4; ++b1) {
-					first = baseNames[b1];
-					for (b2 = 0; b2 < 4; ++b2) {
-						second = baseNames[b2];
-						for (b3 = 0; b3 < 4; ++b3) {
-							third = baseNames[b3];
-							for (b4 = 0; b4 < 4; ++b4) {
-								fourth = baseNames[b4];
-								sprintf(componentSequences[l], "%c%c%c%c%c%c", first, second, source, third, fourth, target);
-								hasher.getVariantComplement(minusStrandSeq, componentSequences[l]);
-								fprintf(fpairs, "F5%s\tF5%s\n", componentSequences[l], minusStrandSeq);
-								sprintf(componentNames[l], "F5%s", componentSequences[l]);
-								++l;
-							}
-						}
-					}
-				}
+		generateSequence(component, 4, 1);
+		while (generateSequence(component, 4)) {
+			if (component[2]!=target) {
+				sprintf(componentSequences[l], "%s_", component);
+				sprintf(componentNames[l], "U4%s_", component);
+				++l;
 			}
+			if (component[1] != target) {
+				sprintf(componentSequences[l], "_%s", component);
+				sprintf(componentNames[l], "D4_%s", component);
+				++l;
+			}
+		}
+		generateSequence(component, 5, 1);
+		while (generateSequence(component, 5)) {
+			if (component[2] != target) {
+				sprintf(componentSequences[l], "%s", component);
+				sprintf(componentNames[l], "F5%s", component);
+				++l;
+			}
+		}
 
 		model.init(NSEQUENCES / 4, l); // only those with correct target
 		fi = fopen("counts.total.2.txt", "r");
@@ -593,40 +641,39 @@ int main(int argc, char* argv[])
 			useThis[comp] = 1;
 		for (comp = upToThree; comp < l; ++comp)
 			useThis[comp] = 0;
-		for (c = 0; c < l; ++c)
-			model.toFit[c] = model.toUse[c] = useThis[c];
-		fo = fopen("modelMutation.F5.txt", "a");
+		fo = fopen("modelMutation.4and5.txt", "a");
 		for (comp = upToThree; comp < l; ++comp) {
-			setStartingBetasFromCounts(&model);
-			model.toFit[comp] = model.toUse[comp] = useThis[comp]=1;
-			evaluateModel(fo, &model, "modelMutation.F5",useThis);
-			realBeta = model.beta[comp];
-			fitted5Betas[b][comp] = realBeta;
-			fitted5LLs[b][comp] = model.getLnL();
-			model.toFit[comp] = model.toUse[comp] = useThis[comp] = 0;
+			for (c = 0; c < l; ++c)
+				model.toFit[c] = model.toUse[c] = useThis[c];
+			useThis[comp] = 1;
+			for (c = 0; c < l; ++c)
+				model.toFit[c] = model.toUse[c] = useThis[c];
+			evaluateModel(fo, &model, "modelMutation.4and5", useThis,keptBetas[b]);
+			realBeta = model.SD[comp] ? model.beta[comp] / model.SD[comp] : 0.0;
+			// problem is that there is no SD because I think it was calculated earlier when this comp was not included 
+			fitted4and5Betas[b][comp] = realBeta;
+			// if (fabs(realBeta) >= 0.01)	useThese[comp] = 1;
+			useThis[comp] = 0;
 		}
 		fclose(fo);
-		fo=fopen("fitted5Betas.txt", "a");
+		fopen("fitted4and5Betas.txt", "w");
 		for (comp = upToThree; comp < l; ++comp)
-			fprintf(fo, "%s\t%f\t%f\n", componentNames[l],fitted5Betas[b][comp],fitted5LLs[b][comp]);
+			fprintf(fo, "%s\t%f\n", componentNames[l],fitted4and5Betas[b][comp]);
 		fclose(fo);
 
 		sprintf(fn, "modelMutation.fullModel.txt");
 		fo = fopen(fn,"a");
 		for (comp = upToThree; comp < l; ++comp)
-			if (fabs(fitted5Betas[b][comp]) > fitted5BetaThreshold)
+			if (fabs(fitted4and5Betas[b][comp]) > fitted4and5BetaThreshold)
 				useThese[comp] = 1;
-		for (comp = 0; comp < upToThree; ++comp)
-			model.toFit[comp] = model.toUse[comp] = 1;
-		setStartingBetasFromCounts(&model);
 
 		sprintf(line, "modelMutation.fullModel.%c", target);
-		for (comp = upToThree; comp < l; ++comp)
+		for (comp = 0; comp < l; ++comp)
 			model.toFit[comp] = model.toUse[comp] = useThese[l];
-		evaluateModel(fo, &model, line, useThese, 0); // use starting betas from F3counts
-		fclose(fo);
+		setStartingBetasFromCounts(&model);
+		evaluateModel(fo, &model, line, useThese, 0); // use starting betas from F3, U3 and D3 counts
 	}
-	fclose(fpairs);
+	fclose(fo);
 
 	getPredictedCounts(flog, "modelMutation.fullModel.txt", "correctedCounts.total.2.txt", "modelMutation.fullModel.predictions.txt");
 

@@ -28,6 +28,9 @@ along with scoreassoc.If not, see <http://www.gnu.org/licenses/>.
 
 enum thingToMaximise {LRLNLIKE=0,MLMINUSSSQ,MLRLNLIKE};
 
+double getMinusModelLnL();
+double getRegularisedMinusModelLnL();
+
 class glfModel {
 public:
 	double **X, *Y,LN2PI,*F; // F is frequency of each observation
@@ -40,7 +43,7 @@ public:
 	void deNormalise();
 	double getLnL();
 	void getSEs();
-	glfModel() { toFit = 0; X = 0; beta = 0; mean = 0; nRow = nCol = 0; name = 0; gotMeans = isNormalised = 0; LN2PI = log(2 * M_PI); thing = LRLNLIKE; }
+	glfModel() { toFit = 0; X = 0; beta = 0; mean = 0; nRow = nCol = 0; name = 0; gotMeans = isNormalised = 0; LN2PI = log(2 * M_PI); thing = LRLNLIKE; func = getRegularisedMinusModelLnL; }
 	~glfModel() { freeAll(); }
 	int init(int r, int c);
 	void freeAll();
@@ -48,6 +51,9 @@ public:
 	virtual double penaltyFunction() { return 0;  }
 	void useLinearRegression(int l) { thing = l == 0 ? LRLNLIKE : MLRLNLIKE;  }
 	thingToMaximise thing;
+	double (*func)();
+	void setFunc(double (*f)()) { func = f; }
+	
 };
 
 class glfRidgePenaltyModel : public glfModel {

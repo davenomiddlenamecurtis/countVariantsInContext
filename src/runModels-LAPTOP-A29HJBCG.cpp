@@ -57,64 +57,27 @@ int generateSequence(char* s, int len,int start)
 	}
 }
 
-int writeRFiles(glfModel* m, char* root)
-{
-	char fn[100],line[10000];
-	FILE* fo;
-	int b,r,first;
-	sprintf(fn, "%s.R.tab.txt", root);
-	fo = fopen(fn, "w");
-	for (b = 0; b < m->nCol; ++b)
-		fprintf(fo, "%s\t",m->name[b]);
-	fprintf(fo, "Y\tN\n");
-	for (r = 0; r < m->nRow; ++r) {
-		for (b = 0; b < m->nCol; ++b)
-			fprintf(fo, "%f\t", m->X[r][b]);
-		fprintf(fo, "0\t%d\n", (int)(m->F[r]- m->Y[r]* m->F[r]));
-		for (b = 0; b < m->nCol; ++b)
-			fprintf(fo, "%f\t", m->X[r][b]);
-		fprintf(fo, "1\t%d\n", (int)(m->Y[r] * m->F[r]));
-	}
-	fclose(fo);
-	sprintf(fn, "%s.R.formula.txt", root);
-	fo = fopen(fn, "w");
-	sprintf(line, "Y ~ ");
-	first = 1;
-	for (b = 0; b < m->nCol; ++b)
-		if (m->toFit[b]) {
-			sprintf(strchr(line, '\0'), "%s%s ", first ? "" : "+ ", m->name[b]);
-				first = 0;
-		}
-	if (m->toFit[m->nCol] == 0)
-		sprintf(strchr(line, '\0'), " - 1");
-	fprintf(fo, "%s\n",line);
-	fclose(fo);
-	return 1;
-}
-
 // just add up counts to get averages for each beta
 void setStartingBetasFromCounts(glfModel* m)
 {
-	float *N, *sigmaX,p;
+	float N=0, *sigmaX,p;
 	int b, r;
 	assert((sigmaX = (float*)calloc(m->nCol, sizeof(float))) != 0);
-	assert((N = (float*)calloc(m->nCol, sizeof(float))) != 0);
 	for (r = 0; r < m->nRow; ++r) {
+		N += m->F[r];
 		for (b = 0; b < m->nCol; ++b) 
 			if (m->toFit[b]) {
-				sigmaX[b] += m->X[r][b] * m->F[r]*m->Y[r];
-				N[b] += m->X[r][b] * m->F[r];
+				sigmaX[b] += m->X[r][b] * m->F[r];
 			}
 	}
 	for (b = 0; b < m->nCol; ++b)
 		if (m->toFit[b]) {
-			p=sigmaX[b]/N[b];
+			p=sigmaX[b]/N;
 			m->beta[b] = log(p / (1 - p));
-			m->SE[b] = log((p+sqrt(p * (1 - p)/N[b])) / p);
-			// actually log of SE of p, not odds, but I do not care
+			m->SE[b] = log(sqrt(N * p * (1 - p))); 
+			//actually log of SE of p, not odds, but I do not care
 		}
 	free(sigmaX);
-	free(N);
 }
 
 // produce variants in same order as is used by SigProfilerAssignment for input matrix (FFS)
@@ -264,27 +227,18 @@ float evaluateModel(FILE* fo, glfModel* m, const char* name,int *useThese,double
 {
 	float lnL;
 	int b;
-	m->setFunc(getMinusModelLnL);
 	for (b = 0; b < m->nCol+1; ++b)
 	{
 		m->toUse[b] = useThese?useThese[b]:1;
+		m->beta[b] = startingBetas? startingBetas[b]:0;
 		m->toFit[b] = useThese ? useThese[b] : 1;
 	}
-	if (startingBetas) {
-		for (b = 0; b < m->nCol + 1; ++b)
-			m->beta[b] = startingBetas[b];
-	} // otherwise leave them as they were
-	
-	// m->normalise();
-	// If I do not normalise I get many warnings like this:
-	// Warning, element 115 of inverse negative Hessian diagonal is negative, SE will be nAn
-	// Warning, d2 for beta[10] is negative, local minimum not found
-	// and a terrible fit
+	m->normalise();
 	if (useLinearRegression)
 		m->useLinearRegression(1);
 	lnL = m->maximiseLnL();
 	m->getSEs();
-	// m->deNormalise(); // because I may want to include additional parameters and re-evaluate
+	//	m->deNormalise(); // avoid repeated normalising and deNormalising
 	if (fo)
 		printModel(fo, name, lnL, m);
 	return lnL;
