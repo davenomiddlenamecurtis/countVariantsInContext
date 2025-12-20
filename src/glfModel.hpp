@@ -45,7 +45,7 @@ public:
 	void getSEs();
 	glfModel() { 
 		toFit = 0; toUse = 0;  X = 0; Y = 0; t = 0; t = 0; sigmaT = 0; F = 0;
-		beta = 0; mean = 0; SE = 0; nRow = nCol = 0; name = 0; gotMeans = isNormalised = 0; 
+		beta = 0; mean = 0; SE = 0; SD = 0; nRow = nCol = 0; name = 0; gotMeans = isNormalised = 0;
 		LN2PI = log(2 * M_PI); thing = LRLNLIKE; func = getRegularisedMinusModelLnL;
 	}
 	~glfModel() { freeAll(); }
