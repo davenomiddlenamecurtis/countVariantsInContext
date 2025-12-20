@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	unsigned int hash;
 	char target,source,first, second,third,fourth,fifth;
 	float c1,realBeta,countTotal,LL,*fitted5LLs[4];
-	double* keptBetas[4], *fitted5Betas[4],fitted5BetaThreshold=0.1;
+	double* keptBetas[4], *fitted5Betas[4],fitted5BetaThreshold=0.4;
 	FILE* fi,*fo,*fplus,*fminus,*flog,*fpairs,*fc;
 	char *chr,line[1000],fn[100],seq[7],component[6],intercept[20],minusStrandSeq[7], sig[8],minusStrandSig[8];
 	baseHasher hasher;
@@ -609,7 +609,7 @@ int main(int argc, char* argv[])
 		fclose(fo);
 		fo=fopen("fitted5Betas.txt", "a");
 		for (comp = upToThree; comp < l; ++comp)
-			fprintf(fo, "%s\t%f\t%f\n", componentNames[l],fitted5Betas[b][comp],fitted5LLs[b][comp]);
+			fprintf(fo, "%s\t%f\t%f\n", componentNames[comp],fitted5Betas[b][comp],fitted5LLs[b][comp]);
 		fclose(fo);
 
 		sprintf(fn, "modelMutation.fullModel.txt");
