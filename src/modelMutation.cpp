@@ -218,6 +218,7 @@ int main(int argc, char* argv[])
 		printModel(fo, line, LL, &model);
 	}
 	fclose(fo);
+	fclose(fpairs);
 
 	getPredictedCounts(flog, "modelMutation.D2.txt", "correctedCounts.total.2.txt", "modelMutation.D2.predictions.txt");
 
