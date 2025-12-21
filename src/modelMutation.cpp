@@ -515,7 +515,7 @@ int main(int argc, char* argv[])
 
 	getPredictedCounts(flog, "modelMutation.fourDownstreamBases.txt", "correctedCounts.total.2.txt", "modelMutation.fourDownstreamBases.predictions.txt");
 
-	sprintf(fn, "modelMutation.five.txt");
+	sprintf(fn, "modelMutation.F5.txt");
 	fo = fopen(fn, "w");
 	fclose(fo);
 	sprintf(fn, "modelMutation.fullModel.txt");
