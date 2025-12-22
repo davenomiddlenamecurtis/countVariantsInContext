@@ -614,17 +614,19 @@ int main(int argc, char* argv[])
 
 		sprintf(fn, "modelMutation.fullModel.txt");
 		fo = fopen(fn,"a");
+		for (comp = 0; comp<upToThree; ++comp)
+			useThese[comp] = 1;
 		for (comp = upToThree; comp < l; ++comp)
 			if (fabs(fitted5Betas[b][comp]) > fitted5BetaThreshold)
 				useThese[comp] = 1;
+			else
+				useThese[comp] = 0;
 		for (comp = 0; comp < upToThree; ++comp)
 			model.toFit[comp] = model.toUse[comp] = 1;
 		setStartingBetasFromCounts(&model);
 
 		sprintf(line, "modelMutation.fullModel.%c", target);
-		for (comp = upToThree; comp < l; ++comp)
-			model.toFit[comp] = model.toUse[comp] = useThese[l];
-		evaluateModel(fo, &model, line, useThese, 0); // use starting betas from F3counts
+		evaluateModel(fo, &model, line, useThese, 0); // use starting betas from F3 counts
 		fclose(fo);
 	}
 	fclose(fpairs);
